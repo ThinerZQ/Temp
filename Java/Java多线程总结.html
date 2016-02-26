@@ -1,0 +1,40 @@
+<html>
+<head>
+  <title>Java多线程总结</title>
+  <basefont face="微软雅黑" size="2" />
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+  <meta name="exporter-version" content="Evernote Windows/272632; Windows/6.1.7601 Service Pack 1;"/>
+  <style>
+    body, td {
+      font-family: 微软雅黑;
+      font-size: 10pt;
+    }
+  </style>
+</head>
+<body>
+<a name="1164"/>
+<h1>Java多线程总结</h1>
+
+<div>
+<div style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;"><h2>Java多线程是什么</h2><p>Java提供的<strong>并发</strong>(同时、独立)处理<strong>多个任务</strong>的机制。<strong>多个线程共存于同一JVM进程里面，所以共用相同的内存空间</strong>，较之多进程，多线程之间的通信更轻量级。依我的理解，<strong>Java多线程完全就是为了提高CPU的利用率</strong>。Java的线程有4种状态，新建(New)、运行(Runnable)、阻塞(Blocked)、结束(Dead)，<strong>关键就在于阻塞(Blocked)，阻塞意味着等待，阻塞的的线程不参与线程分派器(Thread Scheduler)的时间片分配，自然也就不会使用到CPU</strong>。多线程环境下，那些非阻塞(Blocked)的线程会运行并充分利用CPU。</p><p>Java线程阻塞(Blocked)的类型:</p><ul><li>调用sleep函数进入睡眠状态，<code>Thread.sleep(1000)</code>或者<code>TimeUnit.SECONDS.sleep(1)</code>，<strong>sleep不会释放锁</strong>。</li><li>等待(wait)某个事件，分为两种，(wait,notify,notifyAll)，(await, signal,signalAll) ，后面会详细介绍。<strong>wait和await会释放锁</strong>，且必须在获取到锁的环境才能调用。</li><li>等待锁，synchronized和lock环境中，锁已经被别的线程拿走，等待获取锁。</li><li>IO阻塞(Blocked)，比如网络等待，文件打开，控制台读取。<code>System.in.read()</code>。</li></ul><h2><a name="t1"></a>Java多线程的创建</h2><p><strong>线程驱动任务的处理</strong>，涉及到两个概念，线程(Thread)、以及任务(Task, Java里面叫Runnable)，推荐的做法是写一个类(class)实现Runnable接口，作为Task，传给Thread的的构造函数，调用 Thread的start方法即可。当然你也可以直接继承Thread类，重写(Override)run方法。从任务抽象的角度来说，推荐前者，后者的 优势是简单。想创建多个线程，就new多个Thread并start即可。不过JVM有一个最大线程数的限制，-Xssjava命令行非标准可选项可以设 置大小，不同平台可能不一样，需要查文档或写代码验证。</p><h2><a name="t2"></a>Java多线程的资源竞争(race condition)</h2><p>多个线程同时访问同一份资源(内存块)的时候，可能发生某一个线程处理到一半，被别的线程抢走资源并修改的问题，造成资源的不一致。要避免此类问题，<strong>唯一的解决方案就是加锁</strong>。</p><p>Java有两种锁可供选择:</p><ul><li>对象或者类(class)的锁。<strong>每一个对象或者类都有一个锁。使用synchronized关键字获取。 synchronized加到static方法上面就使用类锁，加到普通方法上面就用对象锁</strong>。除此之外synchronized还可以用于锁定关键区域块(Critical Section)。 synchronized之后要制定一个对象(锁的携带者)，并把关键区域用大括号包裹起来。<code>synchronized(this){// critical code}</code>。</li><li>显示构建的锁(java.util.concurrent.locks.Lock)，调用lock的lock方法锁定关键代码。</li></ul><h2><a name="t3"></a>原子性和可见性</h2><ul><li>原子性(Atomic)是指一个操作处理过程中，CPU(处理控制权) 不会被抢走。处理就会在一个时间片段内处理完毕。Java中两个double数字相加这样一条语句都不具有原子性。</li><li>可见性(visibility)是指多个线程之间看到完全相同的资源，<strong>任何线程对资源的修改，其它线程都能够实时看到</strong>。synchronized能够保证资源的可见性 , volatile关键字也能够保证资源的可见性。</li></ul><h2><a name="t4"></a>Java多线程之间的合作</h2><p>Java多线程共享相同的内存，自然可以通过访问和修改同一份资源(对象)来交互和通信，只是需要注意线程的安全性。此外，Java还提供一些其它的线程交互方式，绝大多数都通过线程分派器(Thread Scheduler)完成。主要的一些交互方式如下:</p><h3><a name="t5"></a>yield</h3><p>提示线程分派器(Thread Scheduler)当前线程已经完成一个完整的工作，此时是一个切换到其它线程的好时机。通常这可以提高切换的可能，但是需要注意<strong>切换只是可能，不是一定发生</strong>。所以业务不能完全依赖于yield。<code>Thread.yield()</code>。</p><h3><a name="t6"></a>join</h3><p>暂停当前线程的运行，等待另外一个线程运行完毕之后再继续运行。<code>anotherThread.join()</code>。这种依赖关 系可以得到保证。依个人的理解，此时当前线程也是被阻塞(Blocked)了，等待另外一个线程运行完毕，然后唤醒。join会抛出 InterruptedException(间接证明当前线程被Blocked)，当前线程调用interrupt方法会解除依赖，并抛出 InterruptedException。</p><h3><a name="t7"></a>wait notify notifyAll</h3><p>这三个都是Object的方法，wait用来阻塞(Block)当前线程，<strong>但是会释放对象的锁</strong>，notify告 诉线程分派器唤醒等待的某一个线程，notifyAll会唤醒所有等待的线程。需要特别注意的是，这三个方法都需要在锁定的环境 (synchronized)里面使用，否则编译通过，但是运行报错。wait notify notifyAll 与 synchronized配对使用。</p><pre><code>while(conditionIsNotSatisfied)
+    wait()
+</code></pre><h3><a name="t8"></a>await signal signalAll</h3><p>await signal signalAll是<code>java.util.concurrent.locks.Condition</code>的三个方法，Condition可以通过Lock获得<code>Condition condition = lock.newCondition()</code>。从功能上来说，await signal signalAll与wait notify notifyAll应该是相同的，只是await signal signalAll与Condition配对使用。</p><pre><code>while(conditionIsNotSatisfied)
+    condition.await()
+</code></pre><h2><a name="t9"></a>取消线程的运行</h2><p>推荐的做法是调用线程的interrupt方法。线程也有stop函数，不过JDK1.5以后被弃用了，原因据说是因为会引起死锁。<strong>所有会抛出InterruptedException的线程阻塞都可以调用interrupt方法唤醒，不过是通过异常的方式退出，如果需要释放资源，一定要使用try finally语句</strong>。 IO的阻塞、synchronized阻塞、lock阻塞都无法使用interrupt方法唤醒。IO阻塞可以通过关闭(close)资源的方式退出。如 果是非阻塞的线程，需要检测interrupt状态，有两个方法，isInterrupted和interrupted，interrupted有副作 用，会清理状态。标准的能够响应interrupt的程序格式大概如下:</p><pre style="background-color:#f8f8f8; border:1px solid #ddd; padding:6px 10px; font-size:13px; line-height:19px; overflow:auto"><code>
+  public void run(){
+    try{
+        // check interrupt status
+        while(!Thread.interrupted()){
+            // declare resource
+            try{
+                // use resource
+            }catch(Exception e){
+                // release resource
+            }
+        }
+    }catch(InterruptedException ex){
+        // do something when InterruptedException triggered.
+    }
+}
+</code></pre><h1><a name="t10"></a>后记</h1><ul><li>Java的线程是阻塞(同步)的，优点是顺序执行，易于编写和理解。有些场景下需要借助多线程才能提高运行效率。</li><li>最近两年非 常火Node.js是非阻塞的，事件驱动，效率非常高，但是Node.js也非银弹，攻无不克，它是单线程的， 在手机都8核的年代里面，单线程会有CPU利用不足的问题。可能的一个解法是多进程，启动多个Node.js实例。 另外一个问题是代码的可读性会比较差一些，容易出现多次嵌套的结构。</li><li>函数式编程，永远不会改变参数的值，没有全局变量，没有副作用，天然的是线程安全的。看起来像银弹，但是 函数式编程的门槛比较高，推广会是个问题。</li></ul></div>
+</div></body></html> 

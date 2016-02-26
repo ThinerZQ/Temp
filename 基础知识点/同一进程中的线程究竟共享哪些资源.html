@@ -1,0 +1,40 @@
+<html>
+<head>
+  <title>同一进程中的线程究竟共享哪些资源</title>
+  <basefont face="微软雅黑" size="2" />
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+  <meta name="exporter-version" content="Evernote Windows/272632; Windows/6.1.7601 Service Pack 1;"/>
+  <style>
+    body, td {
+      font-family: 微软雅黑;
+      font-size: 10pt;
+    }
+  </style>
+</head>
+<body>
+<a name="835"/>
+<h1>同一进程中的线程究竟共享哪些资源</h1>
+
+<div>
+<div style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;"><span style="line-height: 20px; color: rgb(82, 112, 108); font-family: Georgia; letter-spacing: 2px; font-size: 16px;">线程共享的环境包括：<b>进程代码段</b>、进程的<b>公有数据</b>(利用这些共享的数据，线程很容易的实现相互之间的通讯)、进程打开的<b>文件描述符</b>、<b>信号的处理器</b>、进程的<b>当前目录</b>和<b>进程用户ID</b>与<b>进程组ID</b>。</span><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">    进程拥有这许多共性的同时，还拥有自己的个性。有了这些个性，线程才能实现并发性。这些个性包括：</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;"><br/>
+    1.线程ID<br/>
+      每个线程都有自己的线程ID，这个ID在本进程中是唯一的。进程用此来标</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">   识线程。</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">    2.寄存器组的值<br/>
+       由于线程间是并发运行的，每个线程有自己不同的运行线索，当从一个线</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">   程切换到另一个线程上</span><span style="line-height: normal; font-size: 16px;">时，必须将原有的线程的寄存器集合的状态保存，以便</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">   将来该线程在被重新切换到时能得以恢复。</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">    3.线程的堆栈<br/>
+       堆栈是保证线程独立运行所必须的。<br/>
+       线程函数可以调用函数，而被调用函数中又是可以层层嵌套的，所以线程</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">   必须拥有自己的函数堆栈，</span><span style="line-height: normal; font-size: 16px;">使得函数调用可以正常执行，不受其他线程的影</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">   响。</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;"><br/>
+    4.错误返回码<br/>
+       由于同一个进程中有很多个线程在同时运行，可能某个线程进行系统调用</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">   后设置了errno值，而在该</span><span style="line-height: normal; font-size: 16px;">线程还没有处理这个错误，另外一个线程就在此时</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">   被调度器投入运行，这样错误值就有可能被修改。<br/>
+       所以，不同的线程应该拥有自己的错误返回码变量。</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;"><br/>
+    5.线程的信号屏蔽码<br/>
+       由于每个线程所感兴趣的信号不同，所以线程的信号屏蔽码应该由线程自</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">   己管理。但所有的线程都</span><span style="line-height: normal; font-size: 16px;">共享同样的信号处理器。</span></div><div style="color: rgb(82, 112, 108); font-family: Arial; word-wrap: break-word; word-break: break-all; visibility: visible !important; zoom: 1 !important; filter: none; font-size: 12px; line-height: 20px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;"><br/>
+    6.线程的优先级<br/>
+       由于线程需要像进程那样能够被调度，那么就必须要有可供调度使用的参</span></div><p style="line-height: 20px; color: rgb(82, 112, 108); font-family: Georgia; font-size: 12px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">   数，这个参数就是线程的</span><span style="line-height: normal; font-size: 16px;">优先级。</span></p><p style="line-height: 20px; color: rgb(82, 112, 108); font-family: Georgia; font-size: 12px; letter-spacing: 2px;"><span style="line-height: normal; font-size: 16px;">涉及多线程程序涉及的时候经常会出现一些令人难以思议的事情，用堆和栈分配一个变量可能在以后的执行中产生意想不到的结果，而这个结果的表现就是内存的非法被访问，导致内存的内容被更改。 <br/><br/>
+　　理解这个现象的两个基本概念是：在一个进程的线程共享堆区，而进程中的线程各自维持自己堆栈。 <br/><br/>
+　 　另一运行机制就是如果声明一个成员变量如 char Name[200]，随着这段代码调用的结束，Name在栈区的地址被释放，而如果是 char * Name = new char[200]; 情况则完全不同，除非显示调用delete否则 Name指向的地址不会被释放。 <br/><br/>
+　　在B中如果用栈区 即采用临时变量的机制分配声明V和堆区，而者的结果是不同的。如果用栈区，如果变量地址为Am1-Am2这么大，退出B调用时候这段地址被释放，C函数可能将这段内存改写；这样当D执行的时候，从内存Am1-Am2中读取的内容就是被改过的了。 <br/><br/>
+　　而如果用New（堆）分配，则不会出现那样的情况，因为没有显示对用delete并且堆对于线程共享，即2线程可以看到1线程在堆里分配的东西，所以不会发生误写。 <br/><br/>
+　 　这个问题是笔者在公司实习的时候发现的，因为当时刚刚涉及多线程程序设计，操作系统中如此简单的话题困扰笔者很久，希望可以对初涉C++多线程的读者有 所帮助！ 2）如果两个线程共享堆，而且都有可能执行内存分配和释放操作，就必须进行同步保护，这个和C类，R类，T类没有关系。你看到的例子两个线程应该是使用各 自的堆。 <br/><br/>
+　 　在 windows 等平台上，不同线程缺省使用同一个堆，所以用 C 的 malloc （或者 windows 的 GlobalAlloc）分配内存的时候是使用了同步保护的。如果没有同步保护，在两个线程同时执行内存操作的时候会产生竞争条件，可能导致堆内内存管理 混乱。比如两个线程分配了统一块内存地址，空闲链表指针错误等。 <br/><br/>
+　　Symbian 的线程一般使用独立的堆空间。这样每个线程可以直接在自己的堆里分配和释放，可以减少同步所引入的开销。当线程退出的时候，系统直接回收线程的堆空间，线程内没有释放的内存空间也不会造成进程内的内存泄漏。 <br/><br/>
+　 　但是两个线程使用共用堆的时候，就必须用 critical section 或者 mutex 进行同步保护。否则程序崩溃时早晚的事。如果你的线程需要在共用堆上无规则的分配和释放任何数量和类型的对象，可以定制一个自己的 allcator，在 allocator 内部使用同步保护。线程直接使用这个 allocator 分配内存就可以了。这相当于实现自己的 malloc，free。但是更建议你重新审查一下自己的系统，因为这种情况大多数是不必要的。经过良好的设计，线程的本地堆应该能够满足大多数对象的需 求。如果有某一类对象需要在共享堆上创建和共享，这种需求是比较合理的，可以在这个类的 new 和 delete 上实现共享保护。 </span></p></div>
+</div></body></html> 
